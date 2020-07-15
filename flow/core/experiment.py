@@ -148,7 +148,11 @@ class Experiment:
 
                 # Compute the velocity speeds and cumulative returns.
                 veh_ids = self.env.k.vehicle.get_ids()
-                vel.append(np.mean(self.env.k.vehicle.get_speed(veh_ids)))
+                #vel.append(np.mean(self.env.k.vehicle.get_speed(veh_ids)))
+                vel_step = (self.env.k.vehicle.get_speed(veh_ids)) #RWH
+                if vel_step != []:
+                    # Discarting the events where no velocities are registered. RWH
+                    vel.append(np.mean(vel_step))
                 ret += reward
 
                 # Compute the results for the custom callables.

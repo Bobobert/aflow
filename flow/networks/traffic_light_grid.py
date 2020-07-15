@@ -5,6 +5,7 @@ from flow.core.params import InitialConfig
 from flow.core.params import TrafficLightParams
 from collections import defaultdict
 import numpy as np
+import re #RWH
 
 ADDITIONAL_NET_PARAMS = {
     # dictionary of traffic light grid array data
@@ -160,8 +161,12 @@ class TrafficLightGridNetwork(Network):
         # name of the network (DO NOT CHANGE)
         self.name = "BobLoblawsLawBlog"
 
+        # RWH. A random seed that changes to generate some random paths
+        self.rg = np.random.Generator(np.random.SFC64())
+
         super().__init__(name, vehicles, net_params, initial_config,
                          traffic_lights)
+        
 
     def specify_nodes(self, net_params):
         """See parent class."""
@@ -171,10 +176,10 @@ class TrafficLightGridNetwork(Network):
         """See parent class."""
         return self._inner_edges + self._outer_edges
 
-    def specify_routes(self, net_params):
+    def specify_routes__v0(self, net_params): #RWH
         """See parent class."""
         routes = defaultdict(list)
-
+        
         # build row routes (vehicles go from left to right and vice versa)
         for i in range(self.row_num):
             bot_id = "bot{}_0".format(i)
@@ -190,7 +195,9 @@ class TrafficLightGridNetwork(Network):
             for i in range(self.row_num + 1):
                 routes[left_id] += ["left{}_{}".format(self.row_num - i, j)]
                 routes[right_id] += ["right{}_{}".format(i, j)]
-
+        print("Printing starts of routes...")
+        for edge in routes.keys():
+            print(edge)
         return routes
 
     def specify_types(self, net_params):
@@ -484,7 +491,7 @@ class TrafficLightGridNetwork(Network):
 
         return edges
 
-    def specify_connections(self, net_params):
+    def specify_connections_(self, net_params): # NOPE
         """Build out connections at each inner node.
 
         Connections describe what happens at the intersections. Here we link
@@ -522,8 +529,8 @@ class TrafficLightGridNetwork(Network):
 
         return con_dict
 
-    # TODO necessary?
-    def specify_edge_starts(self):
+    # TODO necessary? Nope
+    def specify_edge_starts___(self):
         """See parent class."""
         edgestarts = []
         for i in range(self.col_num + 1):
@@ -552,8 +559,8 @@ class TrafficLightGridNetwork(Network):
 
         start_pos = []
 
-        x0 = 6  # position of the first car
-        dx = 10  # distance between each car
+        x0 = 5  # position of the first car
+        dx = initial_config.bunching  # distance between each car
 
         start_lanes = []
         for i in range(col_num):
@@ -571,7 +578,7 @@ class TrafficLightGridNetwork(Network):
             start_pos += [("bot{}_0".format(i), x0 + k * dx)
                           for k in range(cars_heading_bot)]
             vert_lanes = np.random.randint(low=0, high=net_params.additional_params["vertical_lanes"],
-                                           size=cars_heading_left + cars_heading_right).tolist()
+                                           size=cars_heading_left + cars_heading_right).tolist() 
             start_lanes += vert_lanes
 
         return start_pos, start_lanes
@@ -601,3 +608,119 @@ class TrafficLightGridNetwork(Network):
                                     right_edge_id, top_edge_id]
 
         return sorted(mapping.items(), key=lambda x: x[0])
+    
+    
+
+    def specify_routes__v2(self, net_params): #New function to generate routes. RWH
+        """See parent class."""
+        routes = defaultdict(list)
+        
+        # build row routes (vehicles go from left to right and vice versa)
+        for i in range(self.row_num):
+            bot_id = "bot{}_0".format(i)
+            top_id = "top{}_{}".format(i, self.col_num)
+            for j in range(self.col_num + 1):
+                routes[bot_id] += ["bot{}_{}".format(i, j)]
+                routes[top_id] += ["top{}_{}".format(i, self.col_num - j)]
+
+        # build column routes (vehicles go from top to bottom and vice versa)
+        for j in range(self.col_num):
+            left_id = "left{}_{}".format(self.row_num, j)
+            right_id = "right0_{}".format(j)
+            for i in range(self.row_num + 1):
+                routes[left_id] += ["left{}_{}".format(self.row_num - i, j)]
+                routes[right_id] += ["right{}_{}".format(i, j)]
+
+        def _next_edge_(actual_edge):
+            assert isinstance(actual_edge, str), "Invalid input form. Must be a str from the edge format."
+            all_dir = ["lef", "rig", "top", "bot"]
+            dirs = {"lef":('left{}_{}',-1,0), 
+                    "rig":('right{}_{}',1,0), 
+                    "top":('top{}_{}',0,1), 
+                    "bot":('bot{}_{}',0,-1),
+                    }
+            i, j = re.findall("\d+", actual_edge)
+            i = int(i)
+            j = int(j)
+            if i == 1:
+                all_dir.remove("lef")
+            if i == self.row_num - 1:
+                all_dir.remove("rig")
+            if j == 1:
+                all_dir.remove("top")
+            if j == self.col_num - 1:
+                all_dir.remove("bot")
+            assert not all_dir == [], "Empty options, where is the node directing to?"
+            next_e = self.rg.choice(all_dir)
+            s, i_n, j_n = dirs[next_e]
+            i += i_n
+            j += j_n
+            return s.format(i,j)
+            
+        LIMIT_EDGES = 0
+        for i in range(1, self.row_num):
+            for j in range(1, self.col_num):
+                right_id = "right{}_{}".format(i, j)
+                bot_id = "bot{}_{}".format(i, j)
+                prev_e_r = right_id
+                prev_e_b = bot_id
+                for _ in range(LIMIT_EDGES+1):
+                    routes[right_id] += [prev_e_r]
+                    routes[bot_id] += [prev_e_b]
+                    prev_e_r = _next_edge_(prev_e_r)
+                    prev_e_b = _next_edge_(prev_e_b)
+        #print(routes)
+        return routes
+
+    def specify_routes(self, net_params): # Simpler way. Get it done!. RWH
+        """See parent class."""
+
+        """
+        Consider the following network with n = 2 rows and m = 3 columns
+        On row i, there are four horizontal edges: the left ones labeled
+        "bot{i}_0" (in) and "top{i}_0" (out) and the right ones labeled
+        "bot{i}_{m}" (out) and "top{i}_{m}" (in).
+
+        On column j, there are four vertical edges: the bottom ones labeled
+        "left0_{j}" (out) and "right0_{j}" (in) and the top ones labeled
+        "left{n}_{j}" (in) and "right{n}_{j}" (out)."""
+        routes = defaultdict(list)
+        edged = ["left{0}_{1}","right{0}_{1}","bot{0}_{1}", "top{0}_{1}"]
+
+        for i in range(self.row_num+1):
+            for j in range(self.col_num+1):
+                if i < self.row_num:
+                    # Tops
+                    top = edged[3].format(i,j)
+                    routes[top] += [top]
+                    for k in reversed(range(j)):
+                        routes[top] += [edged[3].format(i,k)]
+                    #bot
+                    bot = edged[2].format(i,j)
+                    #routes[bot] += [bot]
+                    for k in range(j, self.col_num):
+                        routes[bot] += [edged[2].format(i,k)]
+                if j < self.col_num:
+                    # Left
+                    lef = edged[0].format(i,j)
+                    routes[lef] += [lef]
+                    for k in reversed(range(i)):
+                        routes[lef] += [edged[0].format(k,j)]
+                    # Rigth
+                    rig = edged[1].format(i,j)
+                    #routes[rig] += [rig]
+                    for k in range(i, self.row_num):
+                        routes[rig] += [edged[1].format(k,j)]
+
+        """for i in range(self.row_num + 1):
+            for j in range(self.col_num + 1):
+                if i < self.row_num:
+                    for e in edged[2:]:
+                        s = e.format(i,j)
+                        routes[s] += [s]
+                if j < self.col_num:
+                    for e in edged[:2]:
+                        s = e.format(i,j)
+                        routes[s] += [s]"""
+                        
+        return routes

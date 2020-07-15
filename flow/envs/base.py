@@ -507,6 +507,7 @@ class Env(gym.Env, metaclass=ABCMeta):
             except (FatalTraCIError, TraCIException):
                 # if a vehicle was not removed in the first attempt, remove it
                 # now and then reintroduce it
+                print("Failed to add {} on the reset env".format(veh_id))
                 self.k.vehicle.remove(veh_id)
                 if self.simulator == 'traci':
                     self.k.kernel_api.vehicle.remove(veh_id)  # FIXME: hack
@@ -533,6 +534,7 @@ class Env(gym.Env, metaclass=ABCMeta):
         else:
             initial_ids = self.initial_ids
 
+        #print(self.initial_ids, initial_ids) #Main issue is when it updates with reset, some vehicles disappear. RWH
         # check to make sure all vehicles have been spawned
         if len(self.initial_ids) > len(initial_ids):
             missing_vehicles = list(set(self.initial_ids) - set(initial_ids))

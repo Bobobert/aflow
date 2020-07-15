@@ -31,13 +31,17 @@ class ContinuousRouter(BaseRouter):
         elif edge == current_route[-1]:
             # choose one of the available routes based on the fraction of times
             # the given route can be chosen
-            num_routes = len(env.available_routes[edge])
-            frac = [val[1] for val in env.available_routes[edge]]
-            route_id = np.random.choice(
-                [i for i in range(num_routes)], size=1, p=frac)[0]
+            try:
+                num_routes = len(env.available_routes[edge])
+                frac = [val[1] for val in env.available_routes[edge]]
+                route_id = np.random.choice(
+                    [i for i in range(num_routes)], size=1, p=frac)[0]
 
-            # pass the chosen route
-            return env.available_routes[edge][route_id][0]
+                # pass the chosen route
+                return env.available_routes[edge][route_id][0]
+            except:
+                #print("Edge",edge, "has no routes to it, How?", end=" . . . ")
+                return None
         else:
             return None
 

@@ -1106,6 +1106,16 @@ class TraCIVehicle(KernelVehicle):
             # the case of network templates.
             route_id = 'route{}_0'.format(veh_id)
         else:
+            #print("Vehicle {} does not have a route_id. Generating one".format(veh_id)) #RWH
+            # From the deafultdict when a key is called it creates a list
+            # This makes for a false negative with a new empty list, making a bug when
+            # the route is not there. So the following fix in 1102 to 1103 .RWH
+            if self.master_kernel.network.rts.get(edge) is None:
+                #print("Edge {} is empty!".format(edge))
+                #self.master_kernel.network.rts[edge] = [([edge],1)] # Risky. Adding a route on the blind eye.
+                # The prev does not works, this is after the .cfg file is done and loaded to the sumo sim.
+                print("Printing the routes keys dict . . .\n", self.master_kernel.network.rts.keys())
+                raise TraCIException("Edge {} assigned to vehicle {} has no route to it.".format(edge, veh_id))
             num_routes = len(self.master_kernel.network.rts[edge])
             frac = [val[1] for val in self.master_kernel.network.rts[edge]]
             route_id = 'route{}_{}'.format(edge, np.random.choice(
