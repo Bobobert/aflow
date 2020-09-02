@@ -47,10 +47,10 @@ def parse_args(args):
         '--num_cpus', type=int, default=1,
         help='How many CPUs to use')
     parser.add_argument(
-        '--num_steps', type=int, default=5000,
+        '--num_steps', type=int, default=10,
         help='How many total steps to perform learning over')
     parser.add_argument(
-        '--rollout_size', type=int, default=1000,
+        '--rollout_size', type=int, default=10,
         help='How many steps are in a training batch.')
     parser.add_argument(
         '--checkpoint_path', type=str, default=None,
@@ -181,7 +181,7 @@ def train_rllib(submodule, flags):
     """Train policies using the PPO algorithm in RLlib."""
     import ray
     from ray.tune import run_experiments
-
+    print(submodule.test_env.k.traffic_light.get_ids())
     flow_params = submodule.flow_params
     n_cpus = submodule.N_CPUS
     n_rollouts = submodule.N_ROLLOUTS
@@ -193,16 +193,16 @@ def train_rllib(submodule, flags):
         flow_params, n_cpus, n_rollouts,
         policy_graphs, policy_mapping_fn, policies_to_train)
 
-    ray.init(num_cpus=n_cpus + 1, object_store_memory=200 * 1024 * 1024)
+    ray.init(num_cpus=n_cpus + 1, object_store_memory= 2000 * 1024 * 1024)
     exp_config = {
         "run": alg_run,
         "env": gym_name,
         "config": {
             **config
         },
-        "checkpoint_freq": 20,
+        "checkpoint_freq": 50,
         "checkpoint_at_end": True,
-        "max_failures": 999,
+        "max_failures": 500,
         "stop": {
             "training_iteration": flags.num_steps,
         },

@@ -10,7 +10,7 @@ from gym.spaces.discrete import Discrete
 
 from flow.core import rewards
 from flow.envs.traffic_light_grid import TrafficLightGridPOEnv
-from flow.envs.multiagent import MultiEnv
+from flow.envs.multiagent import MultiEnv # ray.lib.env as parent
 
 ADDITIONAL_ENV_PARAMS = {
     # num of nearby lights the agent can observe {0, ..., num_traffic_lights-1}
@@ -154,8 +154,13 @@ class MultiTrafficLightGridPOEnv(TrafficLightGridPOEnv, MultiEnv):
         for edge in self.k.network.get_edge_list():
             ids = self.k.vehicle.get_ids_by_edge(edge)
             if len(ids) > 0:
-                # TODO(cathywu) Why is there a 5 here?
-                density += [5 * len(ids) / self.k.network.edge_length(edge)]
+                # Changed density def. RWH
+                # Added a factor of lanes to account the actual lenght of all the edge.
+                if edge[:3] in ['top', 'bot']:
+                    lanes = self.net_params.additional_params['horizontal_lanes']
+                else:
+                    lanes = self.net_params.additional_params['vertical_lanes']
+                density += [len(ids) / self.k.network.edge_length(edge) * lanes]
                 velocity_avg += [np.mean(
                     [self.k.vehicle.get_speed(veh_id) for veh_id in
                      ids]) / max_speed]
@@ -204,6 +209,7 @@ class MultiTrafficLightGridPOEnv(TrafficLightGridPOEnv, MultiEnv):
         See parent class.
 
         Issues action for each traffic light agent.
+        This version only support 1 lane per side.
         """
         for rl_id, rl_action in rl_actions.items():
             i = int(rl_id.split("center")[ID_IDX])
@@ -213,7 +219,8 @@ class MultiTrafficLightGridPOEnv(TrafficLightGridPOEnv, MultiEnv):
                 # convert values less than 0.0 to zero and above to 1. 0's
                 # indicate that we should not switch the direction
                 action = rl_action > 0.0
-
+            h_lanes = self.net_params.additional_params['horizontal_lanes']
+            v_lanes = self.net_params.additional_params['vertical_lanes']
             if self.currently_yellow[i] == 1:  # currently yellow
                 self.last_change[i] += self.sim_step
                 # Check if our timer has exceeded the yellow phase, meaning it
@@ -221,19 +228,19 @@ class MultiTrafficLightGridPOEnv(TrafficLightGridPOEnv, MultiEnv):
                 if self.last_change[i] >= self.min_switch_time:
                     if self.direction[i] == 0:
                         self.k.traffic_light.set_state(
-                            node_id='center{}'.format(i), state="GrGr")
+                            node_id='center{}'.format(i), state="{0}gg{1}rr{0}gg{1}rr".format('g'*v_lanes, 'r'*h_lanes))
                     else:
                         self.k.traffic_light.set_state(
-                            node_id='center{}'.format(i), state='rGrG')
+                            node_id='center{}'.format(i), state='{1}rr{0}gg{1}rr{0}gg'.format('g'*v_lanes, 'r'*h_lanes))
                     self.currently_yellow[i] = 0
             else:
                 if action:
                     if self.direction[i] == 0:
                         self.k.traffic_light.set_state(
-                            node_id='center{}'.format(i), state='yryr')
+                            node_id='center{}'.format(i), state='{0}yy{1}rr{0}yy{1}rr'.format('y'*v_lanes, 'r'*h_lanes))
                     else:
                         self.k.traffic_light.set_state(
-                            node_id='center{}'.format(i), state='ryry')
+                            node_id='center{}'.format(i), state='{1}rr{0}yy{1}rr{0}yy'.format('y'*v_lanes, 'r'*h_lanes))
                     self.last_change[i] = 0.0
                     self.direction[i] = not self.direction[i]
                     self.currently_yellow[i] = 1

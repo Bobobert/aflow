@@ -404,7 +404,7 @@ class SimParams(object):
     save_render : bool, optional
         specifies whether to save rendering data to disk
     sight_radius : int, optional
-        sets the radius of observation for RL vehicles (meter)
+        sets the radius of observation for RL vehicles (meter) for the piglet render
     show_radius : bool, optional
         specifies whether to render the radius of RL observation
     pxpm : int, optional
@@ -703,6 +703,9 @@ class NetParams:
     template : str, optional
         path to the network template file that can be used to instantiate a
         netowrk in the simulator of choice
+    reroute : bool, opt
+        This option generates rerouter per each edge in the network with
+        uniform probability to change the route of a vehicle exiting it.
     additional_params : dict, optional
         network specific parameters; see each subclass for a description of
         what is needed
@@ -712,12 +715,14 @@ class NetParams:
                  inflows=None,
                  osm_path=None,
                  template=None,
+                 reroute=False,
                  additional_params=None):
         """Instantiate NetParams."""
         self.inflows = inflows or InFlows()
         self.osm_path = osm_path
         self.template = template
         self.additional_params = additional_params or {}
+        self.reroute = reroute # RWH 
 
 
 class InitialConfig:

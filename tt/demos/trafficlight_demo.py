@@ -57,10 +57,11 @@ vehicles.add(veh_id="human",
              routing_controller=(ContinuousRouter, {}),
              num_vehicles=tot_cars)
 ### Simulator parameters
-sim_params = SumoParams(sim_step=0.1, render=True)
+sim_params = SumoParams(sim_step=0.1, render='rgb', show_radius=True,)
 initial_config = InitialConfig(spacing="custom", bunching=15)
 ### Environment parameters
-env_params = EnvParams(additional_params=ADDITIONAL_ENV_PARAMS)
+env_params = EnvParams(additional_params=ADDITIONAL_ENV_PARAMS, evaluate=True,
+    horizon=2000)
 ### Final: Flow parameters
 flow_params = dict(
     exp_tag="TrafficLigth",
@@ -73,8 +74,6 @@ flow_params = dict(
     veh=vehicles,
     initial=initial_config,
 )
-# number of time steps
-flow_params['env'].horizon = 2000
 exp = Experiment(flow_params)
 # run the sumo simulation
 _ = exp.run(1)

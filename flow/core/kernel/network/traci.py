@@ -724,6 +724,37 @@ class TraCIKernelNetwork(BaseKernelNetwork):
 
                     add.append(e)
 
+        # Adding reroute optionts to additional file. RWH
+        if net_params.reroute:
+            """
+            When this option is set to true it adds simple rerouters for each edge
+            to reroute a vehicle exiting from it to change route with uniform probability
+            to a reachable edge. Writen for the Grid like Networks and the 
+            GridRandomRouter.
+            """
+            ids = 0
+            for edge in self.network.edges:
+                next_edges = self.master_kernel.network.next_edge(edge['id'], 0)
+                if len(next_edges) > 0:
+                    e = E("rerouter", **{
+                        'id': str(ids),
+                        'edges': edge['id'],
+                        })
+                    ee = E('interval', **{
+                        'begin': "0",
+                        "end" : "0",
+                        })
+                    for n_edge in next_edges:
+                        ee.append(E('destProbReroute', **{
+                                    'id' : n_edge[0],
+                                    'probability' : "1",
+                        }))
+                    e.append(ee)
+                    add.append(e)
+                    ids += 1
+                else:
+                    continue
+
         printxml(add, self.cfg_path + self.addfn)
 
         # this is the data that we will pass to the *.gui.cfg file

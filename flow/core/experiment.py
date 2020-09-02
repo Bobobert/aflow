@@ -153,7 +153,11 @@ class Experiment:
                 if vel_step != []:
                     # Discarting the events where no velocities are registered. RWH
                     vel.append(np.mean(vel_step))
-                ret += reward
+                if isinstance(reward, dict):#RWH
+                    for _, val in reward.items():
+                        ret += val
+                else:
+                    ret += reward
 
                 # Compute the results for the custom callables.
                 for (key, lambda_func) in self.custom_callables.items():

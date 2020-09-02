@@ -19,13 +19,13 @@ from ray.tune.registry import register_env
 
 # make sure (sample_batch_size * num_workers ~= train_batch_size)
 # time horizon of a single rollout
-HORIZON = 3000
+HORIZON = 1500
 # Number of rings
 NUM_RINGS = 1
 # number of rollouts per training iteration
 N_ROLLOUTS = 20  # int(20/NUM_RINGS)
 # number of parallel workers
-N_CPUS = 2  # int(20/NUM_RINGS)
+N_CPUS = 4  # int(20/NUM_RINGS)
 
 # We place one autonomous vehicle and 21 human-driven vehicles in the network
 vehicles = VehicleParams()

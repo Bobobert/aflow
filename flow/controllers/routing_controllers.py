@@ -154,3 +154,38 @@ class I210Router(ContinuousRouter):
             new_route = super().choose_route(env)
 
         return new_route
+
+class GridRandomRouter(BaseRouter):
+    """A router used to re-route a vehicle in a traffic light grid environment.
+    Added with the functionality to allow the vehicles to randomly change routes
+    instead of straigth lines.
+
+    Usage
+    -----
+    See base class for usage example.
+    """
+    def choose_route(self, env):
+        # Based on minicity
+        vehicles = env.k.vehicle
+        veh_id = self.veh_id
+        veh_edge = vehicles.get_edge(veh_id)
+        veh_route = vehicles.get_route(veh_id)
+        veh_next_edge = env.k.network.next_edge(veh_edge,
+                                                vehicles.get_lane(veh_id))
+        next_route = None
+        if len(veh_route) == 0 or len(veh_next_edge) == 0:
+            # this occurs to inflowing vehicles, whose information is not added
+            # to the subscriptions in the first step that they departed
+            return next_route
+        elif veh_route[-1] == veh_edge:
+            while veh_next_edge[0][0][0] == ":":
+                random_route = random.randint(0, len(veh_next_edge) - 1)
+                veh_next_edge = env.k.network.next_edge(
+                    veh_next_edge[random_route][0],
+                    veh_next_edge[random_route][1])
+            next_route = [veh_edge, veh_next_edge[0][0]]
+            return next_route
+        else:
+            return next_route
+
+    

@@ -272,12 +272,13 @@ class MultiEnv(MultiAgentEnv, Env):
 
         Parameters
         ----------
-        rl_actions : array_like
+        rl_actions : dict
             list of actions provided by the RL algorithm
+            with id_veh as keys
 
         Returns
         -------
-        rl_clipped : array_like
+        rl_clipped : dict
             The rl_actions clipped according to the box
         """
         # ignore if no actions are issued
@@ -286,8 +287,8 @@ class MultiEnv(MultiAgentEnv, Env):
 
         # clip according to the action space requirements
         if isinstance(self.action_space, Box):
-            for key, action in rl_actions.items():
-                rl_actions[key] = np.clip(
+            for id, action in rl_actions.items():
+                rl_actions[id] = np.clip(
                     action,
                     a_min=self.action_space.low,
                     a_max=self.action_space.high)

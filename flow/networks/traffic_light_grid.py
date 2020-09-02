@@ -669,24 +669,14 @@ class TrafficLightGridNetwork(Network):
                     routes[bot_id] += [prev_e_b]
                     prev_e_r = _next_edge_(prev_e_r)
                     prev_e_b = _next_edge_(prev_e_b)
-        #print(routes)
         return routes
 
-    def specify_routes(self, net_params): # Simpler way. Get it done!. RWH
+def specify_routes(self, net_params): # Simpler way. Get it done!. RWH
         """See parent class."""
 
-        """
-        Consider the following network with n = 2 rows and m = 3 columns
-        On row i, there are four horizontal edges: the left ones labeled
-        "bot{i}_0" (in) and "top{i}_0" (out) and the right ones labeled
-        "bot{i}_{m}" (out) and "top{i}_{m}" (in).
-
-        On column j, there are four vertical edges: the bottom ones labeled
-        "left0_{j}" (out) and "right0_{j}" (in) and the top ones labeled
-        "left{n}_{j}" (in) and "right{n}_{j}" (out)."""
         routes = defaultdict(list)
         edged = ["left{0}_{1}","right{0}_{1}","bot{0}_{1}", "top{0}_{1}"]
-
+        #Gen default straigth routes
         for i in range(self.row_num+1):
             for j in range(self.col_num+1):
                 if i < self.row_num:
@@ -722,5 +712,5 @@ class TrafficLightGridNetwork(Network):
                     for e in edged[:2]:
                         s = e.format(i,j)
                         routes[s] += [s]"""
-                        
+
         return routes
